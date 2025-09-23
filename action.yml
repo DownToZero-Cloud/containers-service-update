@@ -1,0 +1,140 @@
+name: 'DTZ Containers - Update Service'
+description: 'Update an existing DTZ Containers service by fetching current config and overlaying provided fields.'
+inputs:
+  api_key:
+    description: 'DTZ API key (X-API-KEY)'
+    required: true
+  service_id:
+    description: 'ServiceId to update'
+    required: true
+  enabled:
+    description: 'Set enabled (true/false); leave as __UNCHANGED__ to keep current'
+    required: false
+    default: '__UNCHANGED__'
+  domain:
+    description: 'Comma-separated domains; set "" to clear; leave as __UNCHANGED__ to keep'
+    required: false
+    default: '__UNCHANGED__'
+  prefix:
+    description: 'URL prefix, e.g., "/" or "/app"'
+    required: false
+    default: '__UNCHANGED__'
+  container_image:
+    description: 'Container image repository, e.g., "nginx" or "myrepo/app"'
+    required: false
+    default: '__UNCHANGED__'
+  container_image_version:
+    description: 'Image tag or digest, e.g., ":v1.2.3" or "@sha256:..."'
+    required: false
+    default: '__UNCHANGED__'
+  container_pull_user:
+    description: 'Registry username'
+    required: false
+    default: '__UNCHANGED__'
+  container_pull_pwd:
+    description: 'Registry password'
+    required: false
+    default: '__UNCHANGED__'
+  env_variables:
+    description: 'JSON object of env variables. Example: {"KEY":"value","SECRET":{"plainValue":"x"}}'
+    required: false
+    default: '__UNCHANGED__'
+  rewrite_source:
+    description: 'Rewrite source regex; requires rewrite_target'
+    required: false
+    default: '__UNCHANGED__'
+  rewrite_target:
+    description: 'Rewrite target string; requires rewrite_source'
+    required: false
+    default: '__UNCHANGED__'
+  login_provider_name:
+    description: 'Login provider name (e.g., "dtz"), "" to remove, or __UNCHANGED__ to keep'
+    required: false
+    default: '__UNCHANGED__'
+outputs:
+  service:
+    description: 'Updated service JSON'
+    value: ${{ steps.update.outputs.service }}
+runs:
+  using: "composite"
+  steps:
+    - name: Fetch current service
+      id: fetch
+      shell: bash
+      env:
+        API_KEY: ${{ inputs.api_key }}
+        SERVICE_ID: ${{ inputs.service_id }}
+      run: |
+        set -euo pipefail
+        BASE_URL='https://containers.dtz.rocks'
+        API_VERSION='2021-02-21'
+        URL="${BASE_URL}/api/${API_VERSION}/service/${SERVICE_ID}"
+        HTTP_CODE=$(curl --compressed -sS -w "%{http_code}" -H "accept: application/json" -H "X-API-KEY: ${API_KEY}" "${URL}" -o service.json)
+        if [ "$HTTP_CODE" != "200" ]; then
+          echo "Failed to fetch service ${SERVICE_ID}. HTTP $HTTP_CODE" >&2
+          cat service.json || true
+          exit 1
+        fi
+        jq '{enabled,domain,prefix,containerImage,containerImageVersion,containerPullUser,containerPullPwd,envVariables,rewrite,login} | .envVariables = (.envVariables // {})' service.json > base.json
+    - name: Build update payload
+      id: build
+      shell: bash
+      env:
+        INPUT_ENABLED: ${{ inputs.enabled }}
+        INPUT_DOMAIN: ${{ inputs.domain }}
+        INPUT_PREFIX: ${{ inputs.prefix }}
+        INPUT_CONTAINER_IMAGE: ${{ inputs.container_image }}
+        INPUT_CONTAINER_IMAGE_VERSION: ${{ inputs.container_image_version }}
+        INPUT_CONTAINER_PULL_USER: ${{ inputs.container_pull_user }}
+        INPUT_CONTAINER_PULL_PWD: ${{ inputs.container_pull_pwd }}
+        INPUT_ENV_VARIABLES: ${{ inputs.env_variables }}
+        INPUT_REWRITE_SOURCE: ${{ inputs.rewrite_source }}
+        INPUT_REWRITE_TARGET: ${{ inputs.rewrite_target }}
+        INPUT_LOGIN_PROVIDER_NAME: ${{ inputs.login_provider_name }}
+      run: |
+        set -euo pipefail
+
+        jq -n '
+          {}
+          | (if env.INPUT_ENABLED != "__UNCHANGED__" then .enabled = (env.INPUT_ENABLED|ascii_downcase == "true") else . end)
+          | (if env.INPUT_DOMAIN != "__UNCHANGED__" then
+               (if env.INPUT_DOMAIN == "" then .domain = []
+                else .domain = (env.INPUT_DOMAIN | split(",") | map(. | gsub("^\\s+|\\s+$"; "")) | map(select(length>0))) end)
+             else . end)
+          | (if env.INPUT_PREFIX != "__UNCHANGED__" then .prefix = env.INPUT_PREFIX else . end)
+          | (if env.INPUT_CONTAINER_IMAGE != "__UNCHANGED__" then .containerImage = env.INPUT_CONTAINER_IMAGE else . end)
+          | (if env.INPUT_CONTAINER_IMAGE_VERSION != "__UNCHANGED__" then .containerImageVersion = env.INPUT_CONTAINER_IMAGE_VERSION else . end)
+          | (if env.INPUT_CONTAINER_PULL_USER != "__UNCHANGED__" then .containerPullUser = env.INPUT_CONTAINER_PULL_USER else . end)
+          | (if env.INPUT_CONTAINER_PULL_PWD != "__UNCHANGED__" then .containerPullPwd = env.INPUT_CONTAINER_PULL_PWD else . end)
+          | (if env.INPUT_ENV_VARIABLES != "__UNCHANGED__" then .envVariables = (env.INPUT_ENV_VARIABLES | fromjson) else . end)
+          | (if (env.INPUT_REWRITE_SOURCE != "__UNCHANGED__" and env.INPUT_REWRITE_TARGET != "__UNCHANGED__") then
+               .rewrite = {source: env.INPUT_REWRITE_SOURCE, target: env.INPUT_REWRITE_TARGET}
+             else . end)
+          | (if env.INPUT_LOGIN_PROVIDER_NAME != "__UNCHANGED__" then
+               .login = {providerName: env.INPUT_LOGIN_PROVIDER_NAME}
+             else . end)
+        ' > overlay.json
+
+        jq -s '.[0] * .[1]' base.json overlay.json > payload.json
+
+        echo "Payload:"
+        jq . payload.json
+
+    - name: Update service
+      id: update
+      shell: bash
+      env:
+        API_KEY: ${{ inputs.api_key }}
+        SERVICE_ID: ${{ inputs.service_id }}
+      run: |
+        set -euo pipefail
+        BASE_URL='https://containers.dtz.rocks'
+        API_VERSION='2021-02-21'
+        URL="${BASE_URL}/api/${API_VERSION}/service/${SERVICE_ID}"
+        HTTP_CODE=$(curl --compressed -sS -w "%{http_code}" -H "accept: application/json" -H "content-type: application/json" -H "X-API-KEY: ${API_KEY}" -X POST "${URL}" -d @payload.json -o response.json)
+        if [ "$HTTP_CODE" != "200" ]; then
+          echo "Failed to update service ${SERVICE_ID}. HTTP $HTTP_CODE" >&2
+          cat response.json || true
+          exit 1
+        fi
+        echo "service=$(cat response.json | jq -c .)" >> "$GITHUB_OUTPUT"
