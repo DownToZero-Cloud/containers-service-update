@@ -115,11 +115,10 @@ runs:
              else . end)
         ' > overlay.json
 
-        jq -s '.[0] * .[1]' base.json overlay.json > payload.json
+        jq -s '.[0] * .[1]' base.json overlay.json | jq 'del(.. | nulls)' > payload.json
 
         echo "Payload:"
         jq . payload.json
-
     - name: Update service
       id: update
       shell: bash
@@ -128,9 +127,7 @@ runs:
         SERVICE_ID: ${{ inputs.service_id }}
       run: |
         set -euo pipefail
-        BASE_URL='https://containers.dtz.rocks'
-        API_VERSION='2021-02-21'
-        URL="${BASE_URL}/api/${API_VERSION}/service/${SERVICE_ID}"
+        URL="https://containers.dtz.rocks/api/2021-02-21/service/${SERVICE_ID}"
         HTTP_CODE=$(curl --compressed -sS -w "%{http_code}" -H "accept: application/json" -H "content-type: application/json" -H "X-API-KEY: ${API_KEY}" -X POST "${URL}" -d @payload.json -o response.json)
         if [ "$HTTP_CODE" != "200" ]; then
           echo "Failed to update service ${SERVICE_ID}. HTTP $HTTP_CODE" >&2
