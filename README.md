@@ -35,7 +35,7 @@ GitHub composite action to update an existing DTZ Containers service. The action
 - `domain` (optional): Comma-separated list of domains. Set to empty string `""` to clear. Omit to keep as-is.
 - `prefix` (optional): URL prefix, e.g. `/` or `/app`.
 - `container_image` (optional): Container image repo, e.g. `nginx` or `myrepo/app`.
-- `container_image_version` (optional): Image tag or digest, e.g. `:v1.2.3` or `@sha256:...`.
+- `container_image_version` (optional): Image tag or digest, e.g. `v1.2.3` or `sha256:...`.
 - `container_pull_user` (optional): Registry username.
 - `container_pull_pwd` (optional): Registry password.
 - `env_variables` (optional): JSON object of env vars. Example: `{"KEY":"value","SECRET":{"plainValue":"x"}}`.
@@ -76,7 +76,7 @@ Example to capture the updated service:
     api_key: ${{ secrets.DTZ_API_KEY }}
     service_id: abc123
     container_image: myregistry/secure-app
-    container_image_version: '@sha256:b5b2b2c507a0944348e0303114d8d93aaaa081732b86451d9bce1f432a537bc7'
+    container_image_version: 'sha256:b5b2b2c507a0944348e0303114d8d93aaaa081732b86451d9bce1f432a537bc7'
 ```
 
 - Clear domains and remove login:
