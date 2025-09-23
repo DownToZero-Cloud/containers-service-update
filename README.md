@@ -8,7 +8,7 @@ GitHub composite action to update an existing DTZ Containers service. The action
 ## Usage
 
 ```yaml
-- uses: DownToZero-Cloud/containers-service-update@v1
+- uses: DownToZero-Cloud/containers-service-update@main
   with:
     api_key: ${{ secrets.DTZ_API_KEY }}
     service_id: service-abc123
@@ -20,7 +20,7 @@ GitHub composite action to update an existing DTZ Containers service. The action
 ### Second example: Update the image URL (repository + tag)
 
 ```yaml
-- uses: DownToZero-Cloud/containers-service-update@v1
+- uses: DownToZero-Cloud/containers-service-update@main
   with:
     api_key: ${{ secrets.DTZ_API_KEY }}
     service_id: service-abc123
@@ -56,7 +56,7 @@ Example to capture the updated service:
 
 ```yaml
 - id: update
-  uses: DownToZero-Cloud/containers-service-update@v1
+  uses: DownToZero-Cloud/containers-service-update@main
   with:
     api_key: ${{ secrets.DTZ_API_KEY }}
     service_id: abc123
@@ -71,7 +71,7 @@ Example to capture the updated service:
 - Update container image and pin to digest:
 
 ```yaml
-- uses: DownToZero-Cloud/containers-service-update@v1
+- uses: DownToZero-Cloud/containers-service-update@main
   with:
     api_key: ${{ secrets.DTZ_API_KEY }}
     service_id: abc123
@@ -82,7 +82,7 @@ Example to capture the updated service:
 - Clear domains and remove login:
 
 ```yaml
-- uses: DownToZero-Cloud/containers-service-update@v1
+- uses: DownToZero-Cloud/containers-service-update@main
   with:
     api_key: ${{ secrets.DTZ_API_KEY }}
     service_id: abc123
@@ -93,7 +93,7 @@ Example to capture the updated service:
 - Set URL rewrite (source regex to target):
 
 ```yaml
-- uses: DownToZero-Cloud/containers-service-update@v1
+- uses: DownToZero-Cloud/containers-service-update@main
   with:
     api_key: ${{ secrets.DTZ_API_KEY }}
     service_id: abc123
@@ -104,7 +104,7 @@ Example to capture the updated service:
 - Update only environment variables:
 
 ```yaml
-- uses: DownToZero-Cloud/containers-service-update@v1
+- uses: DownToZero-Cloud/containers-service-update@main
   with:
     api_key: ${{ secrets.DTZ_API_KEY }}
     service_id: abc123
