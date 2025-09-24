@@ -24,15 +24,15 @@ inputs:
     required: false
     default: '__UNCHANGED__'
   container_image_version:
-    description: 'Image tag or digest, e.g., ":v1.2.3" or "@sha256:..."'
+    description: 'Image tag or digest, e.g., ":v1.2.3" or "@sha256:..."; set "" to clear'
     required: false
     default: '__UNCHANGED__'
   container_pull_user:
-    description: 'Registry username'
+    description: 'Registry username; set "" to clear; __UNCHANGED__ to keep'
     required: false
     default: '__UNCHANGED__'
   container_pull_pwd:
-    description: 'Registry password'
+    description: 'Registry password; set "" to clear; __UNCHANGED__ to keep'
     required: false
     default: '__UNCHANGED__'
   env_variables:
@@ -103,12 +103,16 @@ runs:
              else . end)
           | (if env.INPUT_PREFIX != "__UNCHANGED__" then .prefix = env.INPUT_PREFIX else . end)
           | (if env.INPUT_CONTAINER_IMAGE != "__UNCHANGED__" then .containerImage = env.INPUT_CONTAINER_IMAGE else . end)
-          | (if env.INPUT_CONTAINER_IMAGE_VERSION != "__UNCHANGED__" then .containerImageVersion = env.INPUT_CONTAINER_IMAGE_VERSION else . end)
-          | (if env.INPUT_CONTAINER_PULL_USER != "__UNCHANGED__" then .containerPullUser = env.INPUT_CONTAINER_PULL_USER else . end)
-          | (if env.INPUT_CONTAINER_PULL_PWD != "__UNCHANGED__" then .containerPullPwd = env.INPUT_CONTAINER_PULL_PWD else . end)
+          | (if env.INPUT_CONTAINER_IMAGE_VERSION == "" then .containerImageVersion = "" else (if env.INPUT_CONTAINER_IMAGE_VERSION != "__UNCHANGED__" then .containerImageVersion = env.INPUT_CONTAINER_IMAGE_VERSION else . end) end)
+          | (if env.INPUT_CONTAINER_PULL_USER == "" then .containerPullUser = "" else (if env.INPUT_CONTAINER_PULL_USER != "__UNCHANGED__" then .containerPullUser = env.INPUT_CONTAINER_PULL_USER else . end) end)
+          | (if env.INPUT_CONTAINER_PULL_PWD == "" then .containerPullPwd = "" else (if env.INPUT_CONTAINER_PULL_PWD != "__UNCHANGED__" then .containerPullPwd = env.INPUT_CONTAINER_PULL_PWD else . end) end)
           | (if env.INPUT_ENV_VARIABLES != "__UNCHANGED__" then .envVariables = (env.INPUT_ENV_VARIABLES | fromjson) else . end)
           | (if (env.INPUT_REWRITE_SOURCE != "__UNCHANGED__" and env.INPUT_REWRITE_TARGET != "__UNCHANGED__") then
-               .rewrite = {source: env.INPUT_REWRITE_SOURCE, target: env.INPUT_REWRITE_TARGET}
+               (if (env.INPUT_REWRITE_SOURCE == "" and env.INPUT_REWRITE_TARGET == "") then
+                  .rewrite = null
+                else
+                  .rewrite = {source: env.INPUT_REWRITE_SOURCE, target: env.INPUT_REWRITE_TARGET}
+                end)
              else . end)
           | (if env.INPUT_LOGIN_PROVIDER_NAME != "__UNCHANGED__" then
                .login = {providerName: env.INPUT_LOGIN_PROVIDER_NAME}

@@ -35,18 +35,20 @@ GitHub composite action to update an existing DTZ Containers service. The action
 - `domain` (optional): Comma-separated list of domains. Set to empty string `""` to clear. Omit to keep as-is.
 - `prefix` (optional): URL prefix, e.g. `/` or `/app`.
 - `container_image` (optional): Container image repo, e.g. `nginx` or `myrepo/app`.
-- `container_image_version` (optional): Image tag or digest, e.g. `v1.2.3` or `sha256:...`.
-- `container_pull_user` (optional): Registry username.
-- `container_pull_pwd` (optional): Registry password.
+- `container_image_version` (optional): Image tag or digest, e.g. `v1.2.3` or `sha256:...`. Set to empty string `""` to clear.
+- `container_pull_user` (optional): Registry username. Set to empty string `""` to clear.
+- `container_pull_pwd` (optional): Registry password. Set to empty string `""` to clear.
 - `env_variables` (optional): JSON object of env vars. Example: `{"KEY":"value","SECRET":{"plainValue":"x"}}`.
   - Supports plain strings, `EncryptedValue` and `PlainValue` shapes as per the API spec.
-- `rewrite_source` and `rewrite_target` (optional, pair): Set URL rewrite. Both must be provided.
+- `rewrite_source` and `rewrite_target` (optional, pair): Set URL rewrite. Both must be provided. Set both to empty string `""` to clear rewrite.
 - `login_provider_name` (optional): Set to e.g. `dtz`. Set to empty string `""` to remove login. Omit to keep as-is.
 
 Notes:
 - If an optional input is omitted, the current value from the fetched service is kept.
 - Setting `domain: ""` results in an empty domain array (no domains).
 - `enabled` is parsed case-insensitively; only the string `"true"` becomes true when provided.
+- Empty string inputs for `container_image_version`, `container_pull_user`, and `container_pull_pwd` explicitly clear those fields.
+- Setting both `rewrite_source: ""` and `rewrite_target: ""` removes the rewrite configuration.
 
 ## Outputs
 
@@ -79,6 +81,18 @@ Example to capture the updated service:
     container_image_version: 'sha256:b5b2b2c507a0944348e0303114d8d93aaaa081732b86451d9bce1f432a537bc7'
 ```
 
+- Clear image version and registry credentials:
+
+```yaml
+- uses: DownToZero-Cloud/containers-service-update@main
+  with:
+    api_key: ${{ secrets.DTZ_API_KEY }}
+    service_id: abc123
+    container_image_version: ""
+    container_pull_user: ""
+    container_pull_pwd: ""
+```
+
 - Clear domains and remove login:
 
 ```yaml
@@ -99,6 +113,17 @@ Example to capture the updated service:
     service_id: abc123
     rewrite_source: '^/old/(.*)$'
     rewrite_target: '/new/$1'
+```
+
+- Clear URL rewrite:
+
+```yaml
+- uses: DownToZero-Cloud/containers-service-update@main
+  with:
+    api_key: ${{ secrets.DTZ_API_KEY }}
+    service_id: abc123
+    rewrite_source: ""
+    rewrite_target: ""
 ```
 
 - Update only environment variables:
